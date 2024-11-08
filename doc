@@ -1,0 +1,39 @@
+1. Random ID cho Tên Tài Nguyên
+random_id.rg_name, random_id.env_name, và random_id.container_name tạo các ID ngẫu nhiên để thêm vào tên tài nguyên (Resource Group, môi trường, và ACR) để đảm bảo chúng là duy nhất.
+2. Docker Push
+null_resource.docker_push: Sử dụng local-exec để thực hiện lệnh đăng nhập vào ACR và đẩy hình ảnh Docker từ máy cục bộ lên ACR.
+command = "docker login" và command = "docker push" thực hiện đăng nhập và đẩy hình ảnh Docker lên ACR.
+3. Tạo Resource Group
+azurerm_resource_group.test: Tạo một Resource Group cho các tài nguyên Azure.
+4. Module Public IP
+module.public_ip: Sử dụng module bên ngoài để tạo một Public IP, lưu trữ kết quả vào local.public_ip.
+5. Virtual Network và Subnet
+azurerm_virtual_network.vnet: Tạo một Virtual Network với dải địa chỉ 10.0.0.0/16.
+azurerm_subnet.subnet: Tạo một Subnet 10.0.0.0/23 trong Virtual Network với các endpoint dịch vụ Microsoft.ContainerRegistry, cho phép Subnet này truy cập ACR thông qua mạng riêng.
+6. Private Endpoint cho ACR
+azurerm_private_endpoint.pep: Tạo một Private Endpoint để truy cập ACR qua mạng riêng, giúp bảo mật và hạn chế truy cập công khai.
+7. Private DNS Zone cho ACR
+azurerm_private_dns_zone.pdz: Tạo một Private DNS Zone privatelink.azurecr.io để liên kết với Private Endpoint, giúp các tài nguyên trong mạng riêng có thể truy cập ACR qua tên miền này.
+azurerm_private_dns_zone_virtual_network_link.vnetlink_private: Liên kết Private DNS Zone với Virtual Network, cho phép Virtual Network phân giải tên miền nội bộ.
+8. Ghi Bản Ghi DNS (A Record) cho ACR
+azurerm_private_dns_a_record.private: Tạo bản ghi A cho ACR trong DNS Zone để các tài nguyên trong VNet có thể truy cập ACR qua mạng nội bộ.
+azurerm_private_dns_a_record.data: Tạo thêm một bản ghi A cho endpoint dữ liệu của ACR.
+9. Tạo Azure Container Registry (ACR)
+azurerm_container_registry.acr: Tạo một ACR có cấu hình bảo mật cao:
+georeplications: Tạo sao lưu tại hai khu vực khác nhau.
+network_rule_set: Chỉ cho phép truy cập từ IP và Subnet đã định nghĩa.
+retention_policy: Xóa các image đã lưu quá 7 ngày để tiết kiệm không gian.
+trust_policy: Cho phép thiết lập chính sách tin tưởng cho registry.
+10. Scope Map cho ACR
+data.azurerm_container_registry_scope_map: Tạo các scope map mặc định cho ACR để quy định quyền push và pull cho token.
+11. Tạo Tokens cho ACR
+azurerm_container_registry_token.pushtoken và azurerm_container_registry_token.pulltoken: Tạo các token cho phép push và pull image từ ACR.
+azurerm_container_registry_token_password: Thiết lập mật khẩu cho các token, thiết lập thời gian hết hạn là 24 giờ.
+12. Xây Dựng và Gắn Tag cho Docker Image
+docker_image.nginx và docker_tag.nginx: Tạo Docker image với tên nginx:latest và gắn tag image với URL của ACR.
+13. Triển Khai Container Apps qua Module
+module.container_apps: Tạo và triển khai Container App với các thông số cấu hình:
+registry: Thiết lập thông tin đăng nhập cho ACR, bao gồm username và password_secret_name.
+container_app_secrets: Định nghĩa bí mật cần thiết để đăng nhập ACR cho Container App.
+template: Định nghĩa cấu hình tài nguyên CPU và bộ nhớ của container cùng với hình ảnh nginx từ ACR.
+ingress: Cấu hình ingress để cho phép truy cập công khai vào Container App.
